@@ -1,0 +1,267 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<title>Elektraheart</title>
+
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bulma@0.9.4/css/bulma.min.css">
+<link href="https://fonts.googleapis.com/css2?family=Cinzel&family=Montserrat&display=swap" rel="stylesheet">
+
+<style>
+
+body {
+    background: #0a0a0a;
+    color: white;
+    font-family: 'Montserrat', sans-serif;
+}
+
+.title {
+    color: #ff4da6 !important;
+    font-family: 'Cinzel', serif;
+}
+
+/* TARJETAS */
+.producto {
+    background: #1a1a1a !important;
+    border-radius: 15px;
+    transition: 0.3s;
+}
+
+.producto img {
+    height: 250px;
+    object-fit: cover;
+}
+
+.precio {
+    font-weight: bold;
+}
+
+.boton {
+    background: #ff4da6 !important;
+    color: white !important;
+}
+
+/* HOVER */
+.producto:hover {
+    transform: scale(1.05);
+    box-shadow: 0px 10px 30px rgba(255, 77, 166, 0.5);
+}
+
+/* FORMULARIO */
+.formulario {
+    max-width: 400px;
+    margin: auto;
+}
+
+/* BOTON ACTIVO */
+.categoria-btn {
+    transition: 0.3s;
+}
+
+.categoria-btn.active {
+    background: #ff4da6;
+    color: white !important;
+    border-radius: 8px;
+}
+
+</style>
+</head>
+
+<body>
+
+<!-- HEADER -->
+<section class="hero is-dark has-text-centered">
+  <div class="hero-body">
+    <h1 class="title">Elektraheart</h1>
+    <p class="subtitle">Estilo gótico • sensual • exclusivo</p>
+  </div>
+</section>
+
+<!-- MENU -->
+<nav class="navbar is-dark">
+  <div class="navbar-menu is-active">
+
+    <div class="navbar-start">
+      <a class="navbar-item categoria-btn active" onclick="mostrarTodos(this)">Todos</a>
+      <a class="navbar-item categoria-btn" onclick="filtrarCategoria('Ropa', this)">Ropa</a>
+      <a class="navbar-item categoria-btn" onclick="filtrarCategoria('Calzado', this)">Calzado</a>
+      <a class="navbar-item categoria-btn" onclick="filtrarCategoria('Accesorios', this)">Accesorios</a>
+      <a class="navbar-item categoria-btn" onclick="filtrarCategoria('Kink', this)">Kink</a>
+    </div>
+
+    <div class="navbar-end">
+      <a class="navbar-item" onclick="mostrarFormulario()">Agregar producto</a>
+      <a class="navbar-item" onclick="mostrarProductos()">Ver productos</a>
+    </div>
+
+  </div>
+</nav>
+
+<!-- PRODUCTOS -->
+<div id="seccionProductos">
+<section class="section">
+  <div class="container">
+    <div class="columns is-multiline" id="productos"></div>
+  </div>
+</section>
+</div>
+
+<!-- FORMULARIO -->
+<div id="seccionFormulario" style="display:none;">
+<section class="section">
+  <div class="container formulario">
+
+    <h2 class="title is-4 has-text-centered">Agregar producto</h2>
+
+    <input class="input" id="nombre" placeholder="Nombre"><br><br>
+    <input class="input" id="desc" placeholder="Descripción"><br><br>
+    <input class="input" id="precio" placeholder="Precio"><br><br>
+    <input class="input" id="imagen" placeholder="URL Imagen"><br><br>
+
+    <div class="select is-fullwidth">
+      <select id="categoria">
+        <option>Ropa</option>
+        <option>Calzado</option>
+        <option>Accesorios</option>
+        <option>Kink</option>
+      </select>
+    </div>
+
+    <br>
+
+    <button class="button boton is-fullwidth" onclick="guardarProducto()">Guardar producto</button>
+
+  </div>
+</section>
+</div>
+
+<script>
+
+/* CAMBIO VISTAS */
+function mostrarFormulario() {
+    document.getElementById("seccionProductos").style.display = "none";
+    document.getElementById("seccionFormulario").style.display = "block";
+}
+
+function mostrarProductos() {
+    document.getElementById("seccionProductos").style.display = "block";
+    document.getElementById("seccionFormulario").style.display = "none";
+}
+
+/* ACTIVAR BOTON */
+function activarBoton(btn) {
+    let botones = document.querySelectorAll(".categoria-btn");
+    botones.forEach(b => b.classList.remove("active"));
+    btn.classList.add("active");
+}
+
+/* MOSTRAR TODOS */
+function mostrarTodos(btn) {
+    activarBoton(btn);
+    cargarProductos();
+}
+
+/* FILTRAR */
+function filtrarCategoria(cat, btn) {
+    activarBoton(btn);
+
+    let lista = JSON.parse(localStorage.getItem("productos")) || [];
+    let contenedor = document.getElementById("productos");
+
+    contenedor.innerHTML = "";
+
+    let filtrados = lista.filter(p => p.categoria === cat);
+
+    filtrados.forEach((p, index) => {
+        crearCard(p, index);
+    });
+
+    if (filtrados.length === 0) {
+        contenedor.innerHTML = "<p>No hay productos</p>";
+    }
+}
+
+/* CREAR TARJETA */
+function crearCard(p, index) {
+    let contenedor = document.getElementById("productos");
+
+    let div = document.createElement("div");
+    div.className = "column is-4";
+
+    div.innerHTML = `
+    <div class="card producto">
+      <div class="card-image">
+        <figure class="image">
+          <img src="${p.imagen}">
+        </figure>
+      </div>
+      <div class="card-content">
+        <p class="title is-5">${p.nombre}</p>
+        <p>${p.desc}</p>
+        <p class="precio">$${p.precio}</p>
+        <p><b>${p.categoria}</b></p>
+        <button class="button is-danger is-small" onclick="eliminarProducto(${index})">Eliminar</button>
+      </div>
+    </div>
+    `;
+
+    contenedor.appendChild(div);
+}
+
+/* GUARDAR */
+function guardarProducto() {
+    let nombre = document.getElementById("nombre").value;
+    let desc = document.getElementById("desc").value;
+    let precio = document.getElementById("precio").value;
+    let imagen = document.getElementById("imagen").value;
+    let categoria = document.getElementById("categoria").value;
+
+    if (!nombre || !desc || !precio || !imagen) {
+        alert("Completa todos los campos");
+        return;
+    }
+
+    let lista = JSON.parse(localStorage.getItem("productos")) || [];
+    lista.push({nombre, desc, precio, imagen, categoria});
+
+    localStorage.setItem("productos", JSON.stringify(lista));
+
+    limpiarFormulario();
+    cargarProductos();
+    mostrarProductos();
+}
+
+/* LIMPIAR */
+function limpiarFormulario() {
+    document.getElementById("nombre").value = "";
+    document.getElementById("desc").value = "";
+    document.getElementById("precio").value = "";
+    document.getElementById("imagen").value = "";
+}
+
+/* CARGAR */
+function cargarProductos() {
+    let lista = JSON.parse(localStorage.getItem("productos")) || [];
+    let contenedor = document.getElementById("productos");
+
+    contenedor.innerHTML = "";
+
+    lista.forEach((p, index) => {
+        crearCard(p, index);
+    });
+}
+
+/* ELIMINAR */
+function eliminarProducto(index) {
+    let lista = JSON.parse(localStorage.getItem("productos")) || [];
+    lista.splice(index, 1);
+    localStorage.setItem("productos", JSON.stringify(lista));
+    cargarProductos();
+}
+
+window.onload = cargarProductos;
+
+</script>
+
+</body>
+</html>
