@@ -28,6 +28,7 @@ body {
 }
 
 .producto img {
+    width: 100%;
     height: 250px;
     object-fit: cover;
 }
@@ -54,10 +55,6 @@ body {
 }
 
 /* BOTON ACTIVO */
-.categoria-btn {
-    transition: 0.3s;
-}
-
 .categoria-btn.active {
     background: #ff4da6;
     color: white !important;
@@ -92,6 +89,9 @@ body {
     <div class="navbar-end">
       <a class="navbar-item" onclick="mostrarFormulario()">Agregar producto</a>
       <a class="navbar-item" onclick="mostrarProductos()">Ver productos</a>
+      <a class="navbar-item" onclick="mostrarCarrito()">
+        🛒 (<span id="contadorCarrito">0</span>)
+      </a>
     </div>
 
   </div>
@@ -135,27 +135,57 @@ body {
 </section>
 </div>
 
+<!-- CARRITO -->
+<div id="seccionCarrito" style="display:none;">
+<section class="section">
+  <div class="container">
+
+    <h2 class="title">Carrito de Compras</h2>
+
+    <div id="carrito"></div>
+
+    <h3 class="title is-4">Total: $<span id="total">0</span></h3>
+
+    <a href="https://linkdepago.cl" target="_blank" class="button boton is-fullwidth">
+      Pagar ahora 💳
+    </a>
+
+  </div>
+</section>
+</div>
+
 <script>
 
 /* CAMBIO VISTAS */
 function mostrarFormulario() {
-    document.getElementById("seccionProductos").style.display = "none";
+    ocultarTodo();
     document.getElementById("seccionFormulario").style.display = "block";
 }
 
 function mostrarProductos() {
+    ocultarTodo();
     document.getElementById("seccionProductos").style.display = "block";
-    document.getElementById("seccionFormulario").style.display = "none";
 }
 
-/* ACTIVAR BOTON */
+function mostrarCarrito() {
+    ocultarTodo();
+    document.getElementById("seccionCarrito").style.display = "block";
+    cargarCarrito();
+}
+
+function ocultarTodo() {
+    document.getElementById("seccionProductos").style.display = "none";
+    document.getElementById("seccionFormulario").style.display = "none";
+    document.getElementById("seccionCarrito").style.display = "none";
+}
+
+/* BOTONES */
 function activarBoton(btn) {
     let botones = document.querySelectorAll(".categoria-btn");
     botones.forEach(b => b.classList.remove("active"));
     btn.classList.add("active");
 }
 
-/* MOSTRAR TODOS */
 function mostrarTodos(btn) {
     activarBoton(btn);
     cargarProductos();
@@ -172,16 +202,10 @@ function filtrarCategoria(cat, btn) {
 
     let filtrados = lista.filter(p => p.categoria === cat);
 
-    filtrados.forEach((p, index) => {
-        crearCard(p, index);
-    });
-
-    if (filtrados.length === 0) {
-        contenedor.innerHTML = "<p>No hay productos</p>";
-    }
+    filtrados.forEach((p, index) => crearCard(p, index));
 }
 
-/* CREAR TARJETA */
+/* TARJETAS */
 function crearCard(p, index) {
     let contenedor = document.getElementById("productos");
 
@@ -191,16 +215,21 @@ function crearCard(p, index) {
     div.innerHTML = `
     <div class="card producto">
       <div class="card-image">
-        <figure class="image">
-          <img src="${p.imagen}">
-        </figure>
+        <img src="${p.imagen}" loading="lazy">
       </div>
       <div class="card-content">
         <p class="title is-5">${p.nombre}</p>
         <p>${p.desc}</p>
         <p class="precio">$${p.precio}</p>
         <p><b>${p.categoria}</b></p>
-        <button class="button is-danger is-small" onclick="eliminarProducto(${index})">Eliminar</button>
+
+        <button class="button boton is-small" onclick='agregarCarrito(${JSON.stringify(p)})'>
+          Agregar 🛒
+        </button>
+
+        <button class="button is-danger is-small" onclick="eliminarProducto(${index})">
+          Eliminar
+        </button>
       </div>
     </div>
     `;
@@ -208,7 +237,7 @@ function crearCard(p, index) {
     contenedor.appendChild(div);
 }
 
-/* GUARDAR */
+/* PRODUCTOS */
 function guardarProducto() {
     let nombre = document.getElementById("nombre").value;
     let desc = document.getElementById("desc").value;
@@ -231,27 +260,15 @@ function guardarProducto() {
     mostrarProductos();
 }
 
-/* LIMPIAR */
-function limpiarFormulario() {
-    document.getElementById("nombre").value = "";
-    document.getElementById("desc").value = "";
-    document.getElementById("precio").value = "";
-    document.getElementById("imagen").value = "";
-}
-
-/* CARGAR */
 function cargarProductos() {
     let lista = JSON.parse(localStorage.getItem("productos")) || [];
     let contenedor = document.getElementById("productos");
 
     contenedor.innerHTML = "";
 
-    lista.forEach((p, index) => {
-        crearCard(p, index);
-    });
+    lista.forEach((p, index) => crearCard(p, index));
 }
 
-/* ELIMINAR */
 function eliminarProducto(index) {
     let lista = JSON.parse(localStorage.getItem("productos")) || [];
     lista.splice(index, 1);
@@ -259,7 +276,56 @@ function eliminarProducto(index) {
     cargarProductos();
 }
 
-window.onload = cargarProductos;
+/* CARRITO */
+function agregarCarrito(producto) {
+    let carrito = JSON.parse(localStorage.getItem("carrito")) || [];
+    carrito.push(producto);
+    localStorage.setItem("carrito", JSON.stringify(carrito));
+    actualizarContador();
+}
+
+function cargarCarrito() {
+    let carrito = JSON.parse(localStorage.getItem("carrito")) || [];
+    let contenedor = document.getElementById("carrito");
+
+    contenedor.innerHTML = "";
+    let total = 0;
+
+    carrito.forEach((p, index) => {
+        total += parseInt(p.precio);
+
+        contenedor.innerHTML += `
+        <div class="box">
+            <p><b>${p.nombre}</b></p>
+            <p>$${p.precio}</p>
+            <button class="button is-danger is-small" onclick="eliminarDelCarrito(${index})">
+                Eliminar
+            </button>
+        </div>
+        `;
+    });
+
+    document.getElementById("total").innerText = total;
+}
+
+function eliminarDelCarrito(index) {
+    let carrito = JSON.parse(localStorage.getItem("carrito")) || [];
+    carrito.splice(index, 1);
+    localStorage.setItem("carrito", JSON.stringify(carrito));
+    cargarCarrito();
+    actualizarContador();
+}
+
+function actualizarContador() {
+    let carrito = JSON.parse(localStorage.getItem("carrito")) || [];
+    document.getElementById("contadorCarrito").innerText = carrito.length;
+}
+
+/* INIT */
+window.onload = function() {
+    cargarProductos();
+    actualizarContador();
+};
 
 </script>
 
